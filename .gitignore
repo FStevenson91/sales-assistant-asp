@@ -11,6 +11,13 @@ __pycache__/
 # C extensions
 *.so
 
+__pycache__/
+*.pyc
+.env
+venv/
+.adk/
+*.db
+
 # Distribution / packaging
 .Python
 build/
