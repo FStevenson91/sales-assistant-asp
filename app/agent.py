@@ -21,10 +21,10 @@ from google.adk.apps.app import App
 from google.adk.models import Gemini
 from google.genai import types
 
-from .tools import create_contact, update_contact, list_contacts
-# from .callbacks import before_model_callback
-from .prompt import agent_prompt
 from .config import AGENT_NAME, COMPANY
+from .prompt import agent_prompt
+from .tools import create_contact, update_contact, list_contacts
+from .callbacks import before_model_callback
 
 load_dotenv()
 
@@ -58,7 +58,7 @@ root_agent = Agent(
     ),
     instruction=instruction, # instruction will be set in callback if we use before_model_callback
     tools=[create_contact, update_contact, list_contacts],
-    # before_model_callbacks=[before_model_callback],
+    before_model_callback=[before_model_callback],
 )
 
 app = App(root_agent=root_agent, name="app")

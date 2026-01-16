@@ -1,5 +1,8 @@
 import requests
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 API_BASE_URL = os.getenv("SPICY_API_BASE_URL", "https://api.spicytool.net/spicyapi/v1")
 SPICY_API_TOKEN = os.getenv("SPICY_API_TOKEN")
@@ -69,18 +72,23 @@ def create_contact(seller_email: str, name: str, phone_number: str, email: str) 
 def update_contact(seller_email: str, identifier: str, name: str = None, email: str = None, phone_number: str = None) -> dict:
     """Updates a contact."""
     try:
-        real_contact = _search_contact_internal(seller_email, identifier)
-        
-        if not real_contact:
-             return {
-                "status": "not_found",
-                "message": "No se encontró el contacto '" + str(identifier) + "' para actualizar."
-            }
-        
-        real_db_id = real_contact.get('_id') or real_contact.get('id')
+        # Si el identifier parece ser un ID de MongoDB (24 caracteres hex), usarlo directo
+        if len(identifier) == 24 and identifier.isalnum():
+            real_db_id = identifier
+        else:
+            # Buscar el contacto por nombre/email/teléfono
+            real_contact = _search_contact_internal(seller_email, identifier)
+            
+            if not real_contact:
+                return {
+                    "status": "not_found",
+                    "message": "No se encontró el contacto '" + str(identifier) + "' para actualizar."
+                }
+            
+            real_db_id = real_contact.get('_id') or real_contact.get('id')
         
         if not real_db_id:
-             return {"status": "error", "message": "Error crítico: El contacto no tiene ID."}
+            return {"status": "error", "message": "Error crítico: El contacto no tiene ID."}
 
         url = API_BASE_URL + "/contact/" + str(real_db_id)
         

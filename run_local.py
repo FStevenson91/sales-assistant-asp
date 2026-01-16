@@ -1,0 +1,71 @@
+
+import os
+import uvicorn
+import requests
+from fastapi import FastAPI, Request
+from dotenv import load_dotenv
+
+# Importamos a Denisse
+from app.agent import root_agent 
+
+load_dotenv()
+
+app = FastAPI()
+
+# Configuración SpicyTool
+SPICY_URL = os.getenv("SPICYTOOL_API_URL")
+SPICY_TOKEN = os.getenv("SPICY_API_TOKEN")
+
+def send_whatsapp(phone, message):
+    """Envía la respuesta de vuelta a tu celular"""
+    headers = {"Authorization": SPICY_TOKEN, "Content-Type": "application/json"}
+    body = {"phoneNumber": phone, "message": message}
+    try:
+        requests.post(SPICY_URL, json=body, headers=headers)
+        print(f"📤 Respondido a {phone}: {message[:50]}...")
+    except Exception as e:
+        print(f"❌ Error enviando WhatsApp: {e}")
+
+@app.post("/webhook")
+async def handle_whatsapp(request: Request):
+    data = await request.json()
+    
+    # 1. Extraer datos de SpicyTool
+    try:
+        # SpicyTool manda estructuras distintas, intentamos capturar lo básico
+        # Ajusta esto según el log si no te llega el mensaje
+        message_body = data.get("data", {}).get("message", "")
+        phone_number = data.get("data", {}).get("phone", "")
+        
+        # Si es un mensaje saliente (nuestro), lo ignoramos
+        if data.get("event") == "message_create" and data.get("data", {}).get("fromMe"):
+            return {"status": "ignored_self"}
+
+        print(f"📩 Recibido de {phone_number}: {message_body}")
+
+        if not message_body:
+            return {"status": "no_message"}
+
+        # 2. Denisse piensa (Ejecutamos el modelo directamente con las tools)
+        # Nota: Usamos generate_content directo para saltarnos la complejidad del runtime de ADK
+        response = root_agent.model.generate_content(
+            contents=message_body,
+            config=root_agent.model._generation_config, # Hereda configs
+            tools=root_agent.tools # Hereda las herramientas CRM
+        )
+        
+        # 3. Extraemos el texto de la respuesta
+        reply_text = response.text if response.text else "🤔 (Denisse ejecutó una acción interna)"
+
+        # 4. Enviamos a WhatsApp
+        send_whatsapp(phone_number, reply_text)
+
+        return {"status": "success"}
+
+    except Exception as e:
+        print(f"🔥 Error en webhook: {e}")
+        return {"status": "error", "detail": str(e)}
+
+if __name__ == "__main__":
+    print("🚀 Servidor Webhook Iniciado en puerto 8000")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
