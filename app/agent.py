@@ -29,6 +29,8 @@ from .callbacks import before_model_callback
 load_dotenv()
 
 my_api_key = os.getenv("GOOGLE_API_KEY")
+if not my_api_key:
+    raise ValueError("❌ GOOGLE_API_KEY no está configurada en .env")
 
 # Commented out to allow for local testing without GCP credentials.
 # import google.auth

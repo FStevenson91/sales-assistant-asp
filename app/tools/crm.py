@@ -1,11 +1,38 @@
+
 import requests
 import os
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
 
 API_BASE_URL = os.getenv("SPICY_API_BASE_URL", "https://api.spicytool.net/spicyapi/v1")
 SPICY_API_TOKEN = os.getenv("SPICY_API_TOKEN")
+
+
+# Funciones de validación
+def is_valid_email(email: str) -> bool:
+    """Valida formato de email."""
+    if not email:
+        return False
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+
+def is_valid_phone(phone: str) -> bool:
+    """Valida teléfono (al menos 7 dígitos)."""
+    if not phone:
+        return False
+    digits = re.sub(r'\D', '', phone)
+    return len(digits) >= 7
+
+
+def is_valid_mongo_id(id_str: str) -> bool:
+    """Valida si es un ID de MongoDB válido (24 caracteres hex)."""
+    if not isinstance(id_str, str) or len(id_str) != 24:
+        return False
+    return all(c in '0123456789abcdefABCDEF' for c in id_str)
+
 
 def _search_contact_internal(seller_email, term):
     """Busca un contacto internamente para obtener su ID real."""
@@ -41,6 +68,19 @@ def _search_contact_internal(seller_email, term):
 def create_contact(seller_email: str, name: str, phone_number: str, email: str) -> dict:
     """Creates a new contact. Name, Phone AND Email are required."""
     try:
+        # Validaciones
+        if not name or not name.strip():
+            return {"status": "error", "message": "El nombre no puede estar vacío."}
+        
+        if not is_valid_email(email):
+            return {"status": "error", "message": f"Email inválido: {email}"}
+        
+        if not is_valid_email(seller_email):
+            return {"status": "error", "message": f"Seller email inválido: {seller_email}"}
+        
+        if not is_valid_phone(phone_number):
+            return {"status": "error", "message": f"Teléfono inválido: {phone_number}"}
+        
         url = API_BASE_URL + "/contact"
         headers = {
             "Authorization": SPICY_API_TOKEN,
@@ -49,7 +89,7 @@ def create_contact(seller_email: str, name: str, phone_number: str, email: str) 
         }
         
         body = {
-            "name": name,
+            "name": name.strip(),
             "phoneNumber": phone_number,
             "userEmail": seller_email,
             "email": email 
@@ -58,7 +98,7 @@ def create_contact(seller_email: str, name: str, phone_number: str, email: str) 
         response = requests.post(url, headers=headers, json=body, timeout=10)
         
         if response.status_code >= 400:
-             return {"status": "error", "message": "Error API: " + str(response.text)}
+            return {"status": "error", "message": "Error API: " + str(response.text)}
 
         return {
             "status": "success",
@@ -72,8 +112,16 @@ def create_contact(seller_email: str, name: str, phone_number: str, email: str) 
 def update_contact(seller_email: str, identifier: str, name: str = None, email: str = None, phone_number: str = None) -> dict:
     """Updates a contact."""
     try:
-        # Si el identifier parece ser un ID de MongoDB (24 caracteres hex), usarlo directo
-        if len(identifier) == 24 and identifier.isalnum():
+        # Validar email si se proporciona
+        if email and not is_valid_email(email):
+            return {"status": "error", "message": f"Email inválido: {email}"}
+        
+        # Validar teléfono si se proporciona
+        if phone_number and not is_valid_phone(phone_number):
+            return {"status": "error", "message": f"Teléfono inválido: {phone_number}"}
+        
+        # Si es un ID de MongoDB válido, usarlo directo
+        if is_valid_mongo_id(identifier):
             real_db_id = identifier
         else:
             # Buscar el contacto por nombre/email/teléfono
@@ -99,7 +147,7 @@ def update_contact(seller_email: str, identifier: str, name: str = None, email: 
         }
         
         body = {"userEmail": seller_email}
-        if name: body["name"] = name
+        if name: body["name"] = name.strip()
         if email: body["email"] = email
         if phone_number: body["phoneNumber"] = phone_number
         
@@ -130,7 +178,6 @@ def list_contacts(seller_email: str, search_term: str = None, page: int = 1, lim
         response = requests.post(url, headers=headers, json=body, timeout=10)
         data = response.json()
         
-        # extract contacts list, normalizing different possible keys
         if isinstance(data, dict):
             contacts_list = data.get('contacts') or data.get('docs') or []
         else:

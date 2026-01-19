@@ -48,7 +48,7 @@ async def send_whatsapp_response(phone: str, message: str, spicy_token: str):
 async def get_or_create_session(user_id: str, seller_email: str):
     """
     Crea sesión con seller_email en el state.
-    ⭐ EL CALLBACK LEE ESTO
+    EL CALLBACK LEE ESTO
     """
     try:
         session = await session_service.get_session(
@@ -66,9 +66,9 @@ async def get_or_create_session(user_id: str, seller_email: str):
         app_name=APP_NAME,
         user_id=user_id,
         session_id=user_id,
-        state={"seller_email": seller_email}  # ⭐ AQUÍ
+        state={"seller_email": seller_email} 
     )
-    print(f"✨ Sesión creada - seller: {seller_email}")
+    print(f"Sesión creada - seller: {seller_email}")
     return session
 
 
@@ -105,15 +105,23 @@ async def webhook_handler(request: Request):
         
         phone = payload.get("phone", "")
         message = payload.get("message", "")
-        seller_email = payload.get("userEmail", "") or TEST_SELLER_EMAIL
+        seller_email = payload.get("userEmail", "")
         spicy_token = payload.get("sppiccytokkenn", "") or SPICY_API_TOKEN
         
+
+        # Validaciones
         if not phone or not message:
             return {"status": "error", "message": "Missing phone or message"}
         
-        print(f"📱 Phone: {phone}")
-        print(f"💬 Message: {message}")
-        print(f"👤 Seller: {seller_email}")
+        if not seller_email:
+            seller_email = TEST_SELLER_EMAIL
+
+        if "@" not in seller_email:
+            return {"status": "error", "message": "Invalid seller email"}
+        
+        print(f"Phone: {phone}")
+        print(f"Message: {message}")
+        print(f"Seller: {seller_email}")
         
         # Crear sesión con seller_email (el callback lo leerá)
         await get_or_create_session(user_id=phone, seller_email=seller_email)
