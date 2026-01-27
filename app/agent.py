@@ -22,7 +22,6 @@ from google.adk.models import Gemini
 from google.genai import types
 
 from .config import AGENT_NAME, COMPANY
-from .prompt import agent_prompt
 from .tools import create_contact, update_contact, list_contacts
 from .callbacks import before_model_callback
 
@@ -40,25 +39,15 @@ if not my_api_key:
 # os.environ["GOOGLE_CLOUD_LOCATION"] = "global"
 # os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "True"
 
-# hydrate prompt with a test seller email for local testing
-TEST_SELLER_EMAIL = os.getenv("TEST_SELLER_EMAIL", "vendedor@inmobiliaria.com")
-
-instruction = agent_prompt.format(
-    agent_name=AGENT_NAME,
-    company=COMPANY,
-    seller_email=TEST_SELLER_EMAIL
-)
-
 root_agent = Agent(
     name="root_agent",
     model=Gemini(
-        # model="gemini-3-flash-preview", it could not exist or fail:
         model="gemini-2.5-flash",
-        # At production, use Default Credentials or another secure method to manage API keys:
+        # En producción, usar Default Credentials u otro metodo seguro para manejar API keys:
         api_key=my_api_key,
         retry_options=types.HttpRetryOptions(attempts=3),
     ),
-    instruction=instruction, # instruction will be set in callback if we use before_model_callback
+    instruction="", # Vacío - hidratado dinámicamente before_model_callback con seller_email y timestamp
     tools=[create_contact, update_contact, list_contacts],
     before_model_callback=[before_model_callback],
 )
