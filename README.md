@@ -1,95 +1,132 @@
-# sales-assistant-asp
+# Sales Assistant CRM
 
-A base ReAct agent built with Google's Agent Development Kit (ADK)
-Agent generated with [`googleCloudPlatform/agent-starter-pack`](https://github.com/GoogleCloudPlatform/agent-starter-pack) version `0.29.3`
+Asistente de ventas conversacional construido con Google ADK (Agent Development Kit) y Gemini. Permite a vendedores gestionar contactos del CRM mediante lenguaje natural.
 
-## Project Structure
+> **Nota:** Este es un proyecto real en producción. El código está disponible para revisión, pero requiere credenciales de la API del CRM para ejecutarse. Si quieres adaptarlo a otro backend, revisa `app/tools/crm.py`.
 
-This project is organized as follows:
+## Qué hace
+
+El agente actúa como asistente personal para vendedores, permitiendo:
+
+- **Crear contactos** - Con validación de email y teléfono
+- **Actualizar contactos** - Busca por nombre o ID automáticamente
+- **Listar contactos** - Con búsqueda y paginación
+
+Cada vendedor solo ve sus propios contactos (aislamiento multi-tenant).
+
+## Stack
+
+- **Google ADK** - Framework para agentes conversacionales
+- **Gemini 2.5 Flash** - Modelo de lenguaje
+- **Spicy CRM API** - Backend de contactos
+- **Python 3.11+**
+
+## Instalación
+
+```bash
+# Clonar el repo
+git clone https://github.com/tu-usuario/sales-assistant-asp.git
+cd sales-assistant-asp
+
+# Crear entorno virtual
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
+
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Configurar variables de entorno
+cp .env.example .env
+# Editar .env con tus credenciales
+```
+
+## Configuración
+
+Edita el archivo `.env` con tus credenciales:
+
+```bash
+GOOGLE_API_KEY=tu_api_key_de_gemini
+TEST_SELLER_EMAIL=tu_email@ejemplo.com
+SPICY_API_BASE_URL=https://api.spicytool.net/spicyapi/v1
+SPICY_API_TOKEN=tu_token_del_crm
+```
+
+Para obtener tu API key de Gemini: [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+
+## Uso
+
+```bash
+# Ejecutar el agente localmente
+adk run app
+
+# O usando make
+make playground
+```
+
+El agente responde en español y pide confirmación antes de crear o modificar contactos.
+
+## Estructura del proyecto
 
 ```
-sales-assistant-asp/
-├── app/                 # Core application code
-│   ├── agent.py         # Main agent logic
-│   ├── agent_engine_app.py # Agent Engine application logic
-│   └── app_utils/       # App utilities and helpers
-├── tests/               # Unit, integration, and load tests
-├── Makefile             # Makefile for common commands
-├── GEMINI.md            # AI-assisted development guide
-└── pyproject.toml       # Project dependencies and configuration
+app/
+├── agent.py        # Configuración del agente y modelo
+├── callbacks.py    # Inyección dinámica del contexto del vendedor
+├── prompt.py       # Instrucciones del agente
+├── config.py       # Configuración general
+└── tools/
+    └── crm.py      # Funciones para interactuar con el CRM
 ```
 
-> 💡 **Tip:** Use [Gemini CLI](https://github.com/google-gemini/gemini-cli) for AI-assisted development - project context is pre-configured in `GEMINI.md`.
+## Cómo funciona
 
-## Requirements
+1. El vendedor inicia una conversación
+2. El callback `before_model_callback` inyecta el email del vendedor en el prompt
+3. El agente usa ese email en todas las llamadas al CRM
+4. Cada vendedor solo accede a sus propios contactos
 
-Before you begin, ensure you have:
-- **uv**: Python package manager (used for all dependency management in this project) - [Install](https://docs.astral.sh/uv/getting-started/installation/) ([add packages](https://docs.astral.sh/uv/concepts/dependencies/) with `uv add <package>`)
-- **Google Cloud SDK**: For GCP services - [Install](https://cloud.google.com/sdk/docs/install)
-- **make**: Build automation tool - [Install](https://www.gnu.org/software/make/) (pre-installed on most Unix-based systems)
+El prompt se hidrata dinámicamente en cada request, incluyendo el timestamp actual.
 
+## Testing local
 
-## Quick Start (Local Testing)
-
-Install required packages and launch the local development environment:
+Para probar localmente, el agente usa `TEST_SELLER_EMAIL` del `.env` como fallback cuando no hay sesión activa.
 
 ```bash
 make install && make playground
 ```
-> **📊 Observability Note:** Agent telemetry (Cloud Trace) is always enabled. Prompt-response logging (GCS, BigQuery, Cloud Logging) is **disabled** locally, **enabled by default** in deployed environments (metadata only - no prompts/responses). See [Monitoring and Observability](#monitoring-and-observability) for details.
 
-## Commands
+## Producción
 
-| Command              | Description                                                                                 |
-| -------------------- | ------------------------------------------------------------------------------------------- |
-| `make install`       | Install all required dependencies using uv                                                  |
-| `make playground`    | Launch local development environment for testing agent |
-| `make deploy`        | Deploy agent to Agent Engine |
-| `make register-gemini-enterprise` | Register deployed agent to Gemini Enterprise ([docs](https://googlecloudplatform.github.io/agent-starter-pack/cli/register_gemini_enterprise.html)) |
-| `make test`          | Run unit and integration tests                                                              |
-| `make lint`          | Run code quality checks (codespell, ruff, mypy)                                             |
+Para producción con Vertex AI, descomentar las líneas en `agent.py`:
 
-For full command options and usage, refer to the [Makefile](Makefile).
+```python
+import google.auth
 
+_, project_id = google.auth.default()
+os.environ["GOOGLE_CLOUD_PROJECT"] = project_id
+os.environ["GOOGLE_CLOUD_LOCATION"] = "us-central1"
+os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "True"
+```
 
-## Usage
-
-This template follows a "bring your own agent" approach - you focus on your business logic, and the template handles everything else (UI, infrastructure, deployment, monitoring).
-1. **Develop:** Edit your agent logic in `app/agent.py`.
-2. **Test:** Explore your agent functionality using the local playground with `make playground`. The playground automatically reloads your agent on code changes.
-3. **Enhance:** When ready for production, run `uvx agent-starter-pack enhance` to add CI/CD pipelines, Terraform infrastructure, and evaluation notebooks.
-
-The project includes a `GEMINI.md` file that provides context for AI tools like Gemini CLI when asking questions about your template.
-
-
-## Deployment
-
-You can deploy your agent to a Dev Environment using the following command:
+Y deployar con:
 
 ```bash
-gcloud config set project <your-dev-project-id>
+gcloud config set project <tu-project-id>
 make deploy
 ```
 
+## Tests
 
-When ready for production deployment with CI/CD pipelines and Terraform infrastructure, run `uvx agent-starter-pack enhance` to add these capabilities.
+```bash
+make test
+```
 
-## Monitoring and Observability
+## Notas
 
-The application provides two levels of observability:
+- El agente siempre pide confirmación antes de crear o modificar contactos
+- Las validaciones de email y teléfono están en `tools/crm.py`
+- Los logs usan el módulo `logging` de Python
 
-**1. Agent Telemetry Events (Always Enabled)**
-- OpenTelemetry traces and spans exported to **Cloud Trace**
-- Tracks agent execution, latency, and system metrics
+---
 
-**2. Prompt-Response Logging (Configurable)**
-- GenAI instrumentation captures LLM interactions (tokens, model, timing)
-- Exported to **Google Cloud Storage** (JSONL), **BigQuery** (external tables), and **Cloud Logging** (dedicated bucket)
-
-| Environment | Prompt-Response Logging |
-|-------------|-------------------------|
-| **Local Development** (`make playground`) | ❌ Disabled by default |
-
-**To enable locally:** Set `LOGS_BUCKET_NAME` and `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=NO_CONTENT`.
-
-See the [observability guide](https://googlecloudplatform.github.io/agent-starter-pack/guide/observability.html) for detailed instructions, example queries, and visualization options.
+Generado con [agent-starter-pack](https://github.com/GoogleCloudPlatform/agent-starter-pack) v0.29.3
