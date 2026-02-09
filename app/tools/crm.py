@@ -76,7 +76,6 @@ def _search_contact_internal(seller_email, term):
 def create_contact(seller_email: str, name: str, phone_number: str, email: str) -> dict:
     """Creates a new contact. Name, Phone AND Email are required."""
     try:
-        # Validaciones
         if not name or not name.strip():
             return {"status": "error", "message": "Name cannot be empty."}
         
@@ -115,11 +114,9 @@ def create_contact(seller_email: str, name: str, phone_number: str, email: str) 
 def update_contact(seller_email: str, identifier: str, name: str = None, email: str = None, phone_number: str = None) -> dict:
     """Updates a contact."""
     try:
-        # Validar email si se proporciona
         if email and not is_valid_email(email):
             return {"status": "error", "message": f"Invalid email: {email}"}
         
-        # Validar teléfono si se proporciona
         if phone_number and not is_valid_phone(phone_number):
             return {"status": "error", "message": f"Invalid phone number: {phone_number}"}
         

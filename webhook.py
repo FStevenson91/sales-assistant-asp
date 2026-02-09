@@ -12,16 +12,13 @@ from app.agent import root_agent
 
 load_dotenv()
 
-# Configuración
 SPICY_API_TOKEN = os.getenv("SPICY_API_TOKEN")
 SPICYTOOL_API_URL = os.getenv("SPICYTOOL_API_URL", "https://api.spicytool.net/api/webhooks/whatsApp/sendMessage")
 TEST_SELLER_EMAIL = os.getenv("TEST_SELLER_EMAIL", "vendedor@inmobiliaria.com")
 APP_NAME = "sales_assistant"
 
-# Servicio de sesiones
 session_service = InMemorySessionService()
 
-# FastAPI app
 webhook_app = FastAPI(title="Sales Assistant Webhook")
 
 

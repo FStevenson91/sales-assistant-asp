@@ -5,14 +5,12 @@ import requests
 from fastapi import FastAPI, Request
 from dotenv import load_dotenv
 
-# Importamos a Denisse
 from app.agent import root_agent 
 
 load_dotenv()
 
 app = FastAPI()
 
-# Configuración SpicyTool
 SPICY_URL = os.getenv("SPICYTOOL_API_URL")
 SPICY_TOKEN = os.getenv("SPICY_API_TOKEN")
 
@@ -30,10 +28,10 @@ def send_whatsapp(phone, message):
 async def handle_whatsapp(request: Request):
     data = await request.json()
     
-    # 1. Extraer datos de SpicyTool
+    # Extraer datos de SpicyTool
     try:
         # SpicyTool manda estructuras distintas, intentamos capturar lo básico
-        # Ajusta esto según el log si no te llega el mensaje
+        # Ajustar esto según el log si no llega el mensaje
         message_body = data.get("data", {}).get("message", "")
         phone_number = data.get("data", {}).get("phone", "")
         
@@ -46,7 +44,7 @@ async def handle_whatsapp(request: Request):
         if not message_body:
             return {"status": "no_message"}
 
-        # 2. Denisse piensa (Ejecutamos el modelo directamente con las tools)
+        # Denisse piensa (Ejecutamos el modelo directamente con las tools)
         # Nota: Usamos generate_content directo para saltarnos la complejidad del runtime de ADK
         response = root_agent.model.generate_content(
             contents=message_body,
@@ -54,10 +52,8 @@ async def handle_whatsapp(request: Request):
             tools=root_agent.tools # Hereda las herramientas CRM
         )
         
-        # 3. Extraemos el texto de la respuesta
         reply_text = response.text if response.text else "🤔 (Denisse ejecutó una acción interna)"
 
-        # 4. Enviamos a WhatsApp
         send_whatsapp(phone_number, reply_text)
 
         return {"status": "success"}

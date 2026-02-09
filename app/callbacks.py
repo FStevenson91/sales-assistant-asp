@@ -31,7 +31,6 @@ def before_model_callback(
     - Ensures each seller only accesses their own data.
     """
     try:
-        # Obtener seller_email del state de la sesión
         seller_email = callback_context.state.get("seller_email")
         
         # Fallback si no hay seller_email (para testing local)
@@ -41,7 +40,6 @@ def before_model_callback(
         
         logger.info(f"🔐 [Callback] Seller email: {seller_email}")
         
-         # Calcular el timestamp ACTUAL en cada request
         current_time = datetime.now().strftime("%d/%m/%Y %H:%M")
 
         # Hidratar el prompt con el seller_email dinámico
@@ -60,7 +58,6 @@ def before_model_callback(
                 system_instruction=final_instruction
             )
         
-        # Retornar None para continuar con la llamada al LLM
         return None
         
     except Exception as e:
