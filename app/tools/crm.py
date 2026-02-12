@@ -9,8 +9,8 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-API_BASE_URL = os.getenv("SPICY_API_BASE_URL", "https://api.spicytool.net/spicyapi/v1")
-SPICY_API_TOKEN = os.getenv("SPICY_API_TOKEN")
+API_BASE_URL = os.getenv("PYROTECH_API_BASE_URL", "https://api.pyrotech.io/api/v1")
+PYROTECH_API_TOKEN = os.getenv("PYROTECH_API_TOKEN")
 
 
 # Funciones de validación
@@ -38,9 +38,9 @@ def is_valid_mongo_id(id_str: str) -> bool:
 
 # Función interna para construir headers
 def _get_headers(seller_email: str) -> dict:
-    """Constructs headers for requests to the Spicy CRM API."""
+    """Constructs headers for requests to the PyroTech CRM API."""
     return {
-        "Authorization": SPICY_API_TOKEN,
+        "Authorization": PYROTECH_API_TOKEN,
         "Content-Type": "application/json",
         "x-user-email": seller_email
     }

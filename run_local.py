@@ -1,4 +1,3 @@
-
 import os
 import uvicorn
 import requests
@@ -11,15 +10,15 @@ load_dotenv()
 
 app = FastAPI()
 
-SPICY_URL = os.getenv("SPICYTOOL_API_URL")
-SPICY_TOKEN = os.getenv("SPICY_API_TOKEN")
+PYROTECH_URL = os.getenv("PYROTECH_API_URL")
+PYROTECH_TOKEN = os.getenv("PYROTECH_API_TOKEN")
 
 def send_whatsapp(phone, message):
     """Envía la respuesta de vuelta a tu celular"""
-    headers = {"Authorization": SPICY_TOKEN, "Content-Type": "application/json"}
+    headers = {"Authorization": PYROTECH_TOKEN, "Content-Type": "application/json"}
     body = {"phoneNumber": phone, "message": message}
     try:
-        requests.post(SPICY_URL, json=body, headers=headers)
+        requests.post(PYROTECH_URL, json=body, headers=headers)
         print(f"📤 Respondido a {phone}: {message[:50]}...")
     except Exception as e:
         print(f"❌ Error enviando WhatsApp: {e}")
@@ -28,9 +27,9 @@ def send_whatsapp(phone, message):
 async def handle_whatsapp(request: Request):
     data = await request.json()
     
-    # Extraer datos de SpicyTool
+    # Extraer datos de PyroTech
     try:
-        # SpicyTool manda estructuras distintas, intentamos capturar lo básico
+        # PyroTech manda estructuras distintas, intentamos capturar lo básico
         # Ajustar esto según el log si no llega el mensaje
         message_body = data.get("data", {}).get("message", "")
         phone_number = data.get("data", {}).get("phone", "")
@@ -48,8 +47,8 @@ async def handle_whatsapp(request: Request):
         # Nota: Usamos generate_content directo para saltarnos la complejidad del runtime de ADK
         response = root_agent.model.generate_content(
             contents=message_body,
-            config=root_agent.model._generation_config, # Hereda configs
-            tools=root_agent.tools # Hereda las herramientas CRM
+            config=root_agent.model._generation_config,  # Hereda configs
+            tools=root_agent.tools  # Hereda las herramientas CRM
         )
         
         reply_text = response.text if response.text else "🤔 (Denisse ejecutó una acción interna)"

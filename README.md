@@ -18,7 +18,7 @@ Cada vendedor solo ve sus propios contactos (aislamiento multi-tenant).
 
 - **Google ADK** - Framework para agentes conversacionales
 - **Gemini 2.5 Flash** - Modelo de lenguaje
-- **Spicy CRM API** - Backend de contactos
+- **PyroTech CRM API** - Backend de contactos
 - **Python 3.11+**
 
 ## Instalación
@@ -48,8 +48,8 @@ Edita el archivo `.env` con tus credenciales:
 ```bash
 GOOGLE_API_KEY=tu_api_key_de_gemini
 TEST_SELLER_EMAIL=tu_email@ejemplo.com
-SPICY_API_BASE_URL=https://api.spicytool.net/spicyapi/v1
-SPICY_API_TOKEN=tu_token_del_crm
+PYROTECH_API_BASE_URL=https://api.pyrotech.io/api/v1
+PYROTECH_API_TOKEN=tu_token_del_crm
 ```
 
 Para obtener tu API key de Gemini: [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
